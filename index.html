@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ortaokul Matematik Bilgi Yarışması</title>
+    <style>
+        :root {
+            --primary: #2196F3;
+            --secondary: #FFEB3B;
+            --success: #4CAF50;
+            --danger: #f44336;
+            --background: #E3F2FD;
+            --timer-bg: #e0e0e0; /* Sadece timer arkaplanı için açık gri */
+            --timer-text: #2C3E50; /* Timer yazısı için koyu lacivert */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--background);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .timer-container {
+            width: 100px;
+            height: 100px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .timer {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary) 0deg, var(--timer-bg) 0deg);
+            transition: all 1s linear;
+        }
+
+        .time-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--timer-text);
+        }
+
+        .question-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            min-height: 120px;
+            position: relative;
+            display: none; /* Başlangıçta gizli */
+        }
+
+        #question {
+            display: block;
+            padding: 20px;
+            min-height: 80px;
+        }
+
+        .question-number {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .options-container {
+            display: none; /* Başlangıçta gizli */
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            background: var(--secondary);
+            color: #333;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button.correct {
+            background: var(--success) !important;
+            color: white;
+        }
+
+        button.wrong {
+            background: var(--danger) !important;
+            color: white;
+        }
+
+        .score-board {
+            text-align: center;
+            font-size: 24px;
+            color: var(--primary);
+            margin: 20px 0;
+            display: none; /* Başlangıçta gizli */
+        }
+
+        .result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .stats-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+
+        .stats-table th, .stats-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            word-break: break-word;
+        }
+
+        /* Sütun genişliklerini ayarla */
+        .stats-table th:nth-child(1), .stats-table td:nth-child(1) { width: 25%; } /* Soru */
+        .stats-table th:nth-child(2), .stats-table td:nth-child(2) { width: 15%; } /* Kullanıcı Cevabı */
+        .stats-table th:nth-child(3), .stats-table td:nth-child(3) { width: 15%; } /* Doğru Cevap */
+        .stats-table th:nth-child(4), .stats-table td:nth-child(4) { width: 30%; } /* Çözüm */
+        .stats-table th:nth-child(5), .stats-table td:nth-child(5) { width: 15%; } /* Durum */
+
+        .stats-table th {
+            background-color: #f8f9fa;
+        }
+
+        .motivation-message {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .good { background: #dff0d8; color: #3c763d; }
+        .medium { background: #fcf8e3; color: #8a6d3b; }
+        .bad { background: #f2dede; color: #a94442; }
+
+        .grade-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .grade-btn {
+            padding: 20px;
+            font-size: 18px;
+            background: var(--primary);
+            color: white;
+            transition: all 0.3s ease; /* Geçiş animasyonu ekleyelim */
+            border: 2px solid transparent; /* Kenarlık için yer ayıralım */
+        }
+
+        .grade-btn.selected {
+            background: var(--success);
+            transform: scale(1.05);
+            border: 2px solid #2E7D32; /* Koyu yeşil kenarlık */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Gölge efekti */
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .options-container {
+                grid-template-columns: 1fr;
+            }
+            
+            button {
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            .stats-table {
+                font-size: 14px;
+            }
+            .grade-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="config.js"></script>
+    <script src="questions_5.js"></script>
+    <script src="questions_6.js"></script>
+    <script src="questions_7.js"></script>
+    <script src="questions_8.js"></script>
+    <audio id="correctSound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000.wav" preload="auto"></audio>
+    <audio id="wrongSound" src="https://assets.mixkit.co/active_storage/sfx/1495/1495.wav" preload="auto"></audio>
+    <audio id="tickSound" src="https://assets.mixkit.co/active_storage/sfx/2003/2003.wav" preload="auto"></audio>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        let selectedGrade = null;
+        // Global değişkenleri tanımlayalım
+        let currentQuestion = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 60;
+        let gameQuestions = [];
+        let gameStats = [];
+
+        // Soruları yükleyen fonksiyonu güncelle
+        async function loadQuestions() {
+            try {
+                let questions;
+                switch(selectedGrade) {
+                    case 5: 
+                        questions = questions_5.questions;
+                        console.log('5. sınıf soruları:', questions); // Debug için
+                        return questions;
+                    case 6: return questions_6.questions;
+                    case 7: return questions_7.questions;
+                    case 8: return questions_8.questions;
+                    default: return [];
+                }
+            } catch (error) {
+                console.error('Sorular yüklenirken hata:', error);
+                return [];
+            }
+        }
+
+        function selectGrade(grade) {
+            selectedGrade = grade;
+            
+            // Seçili sınıf butonunu vurgula
+            document.querySelectorAll('.grade-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Sınıf seçilince direkt oyunu başlat
+            startGame();
+        }
+
+        async function startGame() {
+            if (!selectedGrade) {
+                alert('Lütfen bir sınıf seçin!');
+                return;
+            }
+
+            // Soruları Yükle ve Karıştır
+            const allQuestions = await loadQuestions();
+            if (!allQuestions || allQuestions.length === 0) {
+                alert('Sorular yüklenemedi! Lütfen sayfayı yenileyip tekrar deneyin.');
+                return;
+            }
+            
+            // UI Elementlerini Güncelle
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'none';
+            document.querySelector('.question-container').style.display = 'block';
+            document.querySelector('.options-container').style.display = 'grid';
+            document.querySelector('.score-board').style.display = 'block';
+            
+            // Oyun State'ini Resetle
+            currentQuestion = 0;
+            score = 0;
+            gameStats = [];
+            document.getElementById('score').textContent = '0';
+            document.getElementById('stats').style.display = 'none';
+            
+            gameQuestions = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
+            console.log('Yüklenen sorular:', gameQuestions); // Debug için
+            
+            // İlk Soruyu Göster
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const question = gameQuestions[currentQuestion];
+            
+            // Timer'ı göster
+            document.querySelector('.timer-container').style.display = 'block';
+            
+            // Soru Metnini Güncelle
+            document.getElementById('question').textContent = question.soru;
+            document.getElementById('questionNumber').textContent = `${currentQuestion+1}/20`;
+            
+            // Seçenekleri Oluştur
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            question.secenekler.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = () => checkAnswer(index, option);
+                optionsContainer.appendChild(button);
+            });
+
+            // Çözüm ve İleri Buton Alanını Temizle
+            const existingSolution = document.querySelector('.solution-container');
+            if (existingSolution) {
+                existingSolution.remove();
+            }
+
+            // Timer'ı Başlat
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 60;
+            const timerElement = document.querySelector('.timer');
+            const timeText = document.querySelector('.time-text');
+            const tickSound = document.getElementById('tickSound');
+            tickSound.volume = 0.1; // Ses seviyesini çok düşük yaptık
+            
+            if(timer) clearInterval(timer);
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                timeText.textContent = timeLeft;
+                timerElement.style.background = `conic-gradient(var(--primary) ${(1 - timeLeft/60)*360}deg, var(--timer-bg) 0deg)`;
+                
+                // Her saniye tik sesi çal
+                tickSound.currentTime = 0;
+                tickSound.play().catch(e => console.log('Ses çalma hatası:', e));
+                
+                if(timeLeft <= 0) {
+                    clearInterval(timer);
+                    tickSound.pause(); // Süre bittiğinde sesi durdur
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(selectedIndex, selectedAnswer) {
+            // Timer'ı ve tik sesini durdur
+            clearInterval(timer);
+            const tickSound = document.getElementById('tickSound');
+            tickSound.pause();
+            
+            const question = gameQuestions[currentQuestion];
+            const correctAnswer = question.dogruCevap;
+            const buttons = document.querySelectorAll('#options button');
+            const isLastQuestion = currentQuestion === gameQuestions.length - 1;
+            
+            // Ses efektini çal ve butonları devre dışı bırak
+            buttons.forEach(button => button.disabled = true);
+
+            if(selectedAnswer === correctAnswer) {
+                // Doğru cevap durumu
+                const correctSound = document.getElementById('correctSound');
+                correctSound.currentTime = 0;
+                correctSound.play().catch(e => console.log('Ses çalma hatası:', e));
+                score += 10;
+                document.getElementById('score').textContent = score;
+
+                // Butonları renklendir
+                buttons.forEach((button) => {
+                    if(button.textContent === correctAnswer) {
+                        button.classList.add('correct');
+                    }
+                });
+
+                // Son soru kontrolü
+                if (isLastQuestion) {
+                    endGame(); // Son soru doğruysa direkt bitir
+                } else {
+                    setTimeout(() => {
+                        nextQuestion();
+                    }, 3000);
+                }
+            } else {
+                // Yanlış cevap durumu
+                const wrongSound = document.getElementById('wrongSound');
+                wrongSound.currentTime = 0;
+                wrongSound.play().catch(e => console.log('Ses çalma hatası:', e));
+                score -= 3; // Yanlış cevap için -3 puan
+                document.getElementById('score').textContent = score;
+
+                // Butonları renklendir
+                buttons.forEach((button) => {
+                    if(button.textContent === correctAnswer) {
+                        button.classList.add('correct');
+                    } else if(button.textContent === selectedAnswer) {
+                        button.classList.add('wrong');
+                    }
+                });
+
+                // Çözümü göster
+                showSolution(question.cozum, isLastQuestion);
+            }
+
+            // İstatistik Kaydet
+            gameStats.push({
+                question: question.soru,
+                solution: question.cozum,
+                userAnswer: selectedAnswer,
+                correctAnswer: correctAnswer,
+                isCorrect: selectedAnswer === correctAnswer,
+                timeSpent: 60 - timeLeft
+            });
+        }
+
+        function handleTimeOut() {
+            clearInterval(timer);
+            const tickSound = document.getElementById('tickSound');
+            tickSound.pause();
+            
+            const question = gameQuestions[currentQuestion];
+            const correctAnswer = question.dogruCevap;
+            const isLastQuestion = currentQuestion === gameQuestions.length - 1;
+            
+            // Süre dolduğunda -3 puan
+            score -= 3;
+            document.getElementById('score').textContent = score;
+            
+            // Süre dolduğunda yanlış ses efektini çal
+            const wrongSound = document.getElementById('wrongSound');
+            wrongSound.currentTime = 0;
+            wrongSound.play().catch(e => console.log('Ses çalma hatası:', e));
+            
+            // Butonları devre dışı bırak ve doğru cevabı göster
+            const buttons = document.querySelectorAll('#options button');
+            buttons.forEach(button => {
+                button.disabled = true;
+                if(button.textContent === correctAnswer) {
+                    button.classList.add('correct');
+                }
+            });
+            
+            // Çözümü göster (son soru için özel parametre ile)
+            showSolution(question.cozum, isLastQuestion);
+            
+            // İstatistik Kaydet
+            gameStats.push({
+                question: question.soru,
+                solution: question.cozum,
+                userAnswer: "Süre Doldu",
+                correctAnswer: correctAnswer,
+                isCorrect: false,
+                timeSpent: 60
+            });
+        }
+
+        function showSolution(solution, isLastQuestion = false) {
+            // Varolan çözüm konteynerini kaldır
+            const existingSolution = document.querySelector('.solution-container');
+            if (existingSolution) {
+                existingSolution.remove();
+            }
+
+            // Kronometreyi gizle
+            document.querySelector('.timer-container').style.display = 'none';
+
+            // Yeni çözüm konteyneri oluştur
+            const solutionContainer = document.createElement('div');
+            solutionContainer.className = 'solution-container';
+            solutionContainer.style.cssText = `
+                background: #f8f9fa;
+                padding: 15px;
+                margin: 15px 0;
+                border-radius: 5px;
+                border-left: 4px solid var(--primary);
+            `;
+
+            const solutionTitle = document.createElement('h4');
+            solutionTitle.textContent = 'Çözüm:';
+            solutionTitle.style.margin = '0 0 10px 0';
+
+            const solutionText = document.createElement('div');
+            solutionText.textContent = solution;
+
+            const nextButton = document.createElement('button');
+            // Son soru için farklı buton metni ve işlevi
+            if (isLastQuestion) {
+                nextButton.textContent = 'İstatistiklerine Bak';
+                nextButton.onclick = endGame;
+            } else {
+                nextButton.textContent = 'Sonraki Soru';
+                nextButton.onclick = nextQuestion;
+            }
+            nextButton.style.marginTop = '15px';
+
+            solutionContainer.appendChild(solutionTitle);
+            solutionContainer.appendChild(solutionText);
+            solutionContainer.appendChild(nextButton);
+
+            // Çözümü şıkların altına ekle
+            document.querySelector('.options-container').after(solutionContainer);
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if(currentQuestion < gameQuestions.length) {
+                resetQuestion();
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function resetQuestion() {
+            // UI Resetleme
+            document.querySelectorAll('#options button').forEach(button => {
+                button.classList.remove('correct', 'wrong');
+                button.disabled = false;
+            });
+            document.querySelector('.timer').style.background = '';
+            document.querySelector('.time-text').textContent = '60';
+            
+            // Kronometreyi tekrar göster ve tik sesini sıfırla
+            document.querySelector('.timer-container').style.display = 'block';
+            const tickSound = document.getElementById('tickSound');
+            tickSound.pause();
+            tickSound.currentTime = 0;
+        }
+
+        function endGame() {
+            // Çözüm konteynerini kaldır
+            const existingSolution = document.querySelector('.solution-container');
+            if (existingSolution) {
+                existingSolution.remove();
+            }
+
+            // Oyun Alanını Gizle
+            document.querySelector('.question-container').style.display = 'none';
+            document.querySelector('.options-container').style.display = 'none';
+            document.querySelector('.score-board').style.display = 'none';
+            
+            // Sonuçları Göster
+            const correctCount = gameStats.filter(stat => stat.isCorrect).length;
+            const messageElement = document.getElementById('motivationMessage');
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('totalCorrect').textContent = correctCount;
+            
+            // Motivasyon Mesajı
+            if(correctCount >= 15) {
+                messageElement.textContent = "Aferin! Süpersin! 💯";
+                messageElement.className = "motivation-message good";
+            } else if(correctCount >= 10) {
+                messageElement.textContent = "Güzeldi ama bir dahakine daha iyisini bekliyorum! 😊";
+                messageElement.className = "motivation-message medium";
+            } else {
+                messageElement.textContent = "Acilen telefonda oyun oynamayı bırakman lazım! 📚";
+                messageElement.className = "motivation-message bad";
+            }
+
+            document.getElementById('resultScreen').style.display = 'block';
+        }
+
+        function showStats() {
+            const statsBody = document.getElementById('statsBody');
+            statsBody.innerHTML = '';
+            
+            gameStats.forEach((stat) => {
+                const row = `
+                    <tr>
+                        <td>${stat.question}</td>
+                        <td>${stat.userAnswer}</td>
+                        <td>${stat.correctAnswer}</td>
+                        <td>${stat.solution}</td>
+                        <td>${stat.isCorrect ? '✅' : '❌'}</td>
+                    </tr>
+                `;
+                statsBody.innerHTML += row;
+            });
+            document.getElementById('stats').style.display = 'block';
+        }
+
+        // İlk Yüklemede Sadece Başlangıç Ekranını Göster
+        document.getElementById('startScreen').style.display = 'block';
+        document.getElementById('resultScreen').style.display = 'none';
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="start-screen" id="startScreen">
+            <h1>Ortaokul Matematik Bilgi Yarışması</h1>
+            
+            <div style="margin: 20px auto; max-width: 400px; text-align: left; background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                <h3 style="text-align: center; color: #2196F3; margin-bottom: 15px;">🎮 Nasıl Oynanır?</h3>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                    <li>📝 20 farklı soru seni bekliyor!</li>
+                    <li>⏱️ Her soru için 60 saniye süren var</li>
+                    <li>✨ Doğru cevap: +10 puan</li>
+                    <li>❌ Yanlış/Boş: -3 puan</li>
+                    <li>💡 Yanlış yaptığında çözümü oku, öğren!</li>
+                </ul>
+                <p style="text-align: center; margin-top: 15px; color: #666; font-style: italic;">
+                    Hazırsan, sınıfını seç ve başla! 🚀
+                </p>
+            </div>
+
+            <h3>Sınıf Seçin</h3>
+            <div class="grade-buttons">
+                <button onclick="selectGrade(5)" class="grade-btn">5. Sınıf</button>
+                <button onclick="selectGrade(6)" class="grade-btn">6. Sınıf</button>
+                <button onclick="selectGrade(7)" class="grade-btn">7. Sınıf</button>
+                <button onclick="selectGrade(8)" class="grade-btn">8. Sınıf</button>
+            </div>
+        </div>
+
+        <div class="score-board">Puan: <span id="score">0</span></div>
+        <div class="timer-container" style="display: none;">
+            <div class="timer"></div>
+            <div class="time-text">60</div>
+        </div>
+        <div class="question-container">
+            <div id="question"></div>
+            <div class="question-number" id="questionNumber"></div>
+        </div>
+        <div class="options-container" id="options"></div>
+        
+        <div class="result-screen" id="resultScreen">
+            <h2>Yarışma Tamamlandı! 🎉</h2>
+            <p>Toplam Puan: <span id="finalScore">0</span></p>
+            <p>Sonuç: <span id="totalCorrect">0</span>/20</p>
+            <div id="motivationMessage" class="motivation-message"></div>
+            
+            <button onclick="showStats()">Detaylı İstatistikler</button>
+            <button onclick="startGame()">Tekrar Oyna</button>
+            
+            <div id="stats" style="display:none;">
+                <h3>Detaylı İstatistikler</h3>
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Soru</th>
+                            <th>Kullanıcı Cevabı</th>
+                            <th>Doğru Cevap</th>
+                            <th>Çözüm</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
